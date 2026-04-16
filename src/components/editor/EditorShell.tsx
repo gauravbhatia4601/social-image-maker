@@ -10,7 +10,7 @@ import { BackgroundPanel } from '@/components/panels/BackgroundPanel';
 import { TextPropertiesPanel } from '@/components/panels/TextPropertiesPanel';
 import { ExportPanel } from '@/components/panels/ExportPanel';
 import { Toast } from '@/components/ui/Toast';
-import { generateId, INSPIRATIONAL_QUOTES } from '@/lib/constants';
+import { generateId, INSPIRATIONAL_QUOTES, QUICK_TEXT_STYLES, MEME_PRESETS } from '@/lib/constants';
 import { TextElement } from '@/types/editor';
 import {
   Sparkles,
@@ -26,6 +26,7 @@ import {
   LayoutGrid,
   Droplets,
   X,
+  Zap,
 } from 'lucide-react';
 
 const CanvasEditor = dynamic(
@@ -61,6 +62,7 @@ function EditorContent() {
     setLeftPanel,
     setRightPanel,
     selectText,
+    setBackground,
   } = useEditorActions();
   const stageRef = useRef<Konva.Stage | null>(null);
   const clipboardRef = useRef<TextElement | null>(null);
@@ -219,11 +221,227 @@ function EditorContent() {
     showToast('Quote added!', 'success');
   }, [addText, state.canvasWidth, state.canvasHeight, state.background, selectText, setTool, showToast]);
 
+  const handleAddQuickStyle = useCallback((style: typeof QUICK_TEXT_STYLES[0]) => {
+    const id = generateId();
+    const defaultText: Omit<TextElement, 'id' | 'type'> = {
+      text: 'Your text',
+      x: state.canvasWidth / 2 - 200,
+      y: state.canvasHeight / 2 - 40,
+      fontSize: 48,
+      fontFamily: 'Inter',
+      fontColor: '#000000',
+      fontWeight: 600,
+      fontStyle: 'normal',
+      textAlign: 'center',
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      fillGradientEnable: false,
+      fillGradientStart: '#6366F1',
+      fillGradientEnd: '#06B6D4',
+      textShadowEnabled: false,
+      textShadowColor: '#000000',
+      textShadowBlur: 4,
+      textShadowOffsetX: 2,
+      textShadowOffsetY: 2,
+      textStrokeEnabled: false,
+      textStrokeColor: '#000000',
+      textStrokeWidth: 1,
+      letterSpacing: 0,
+      lineHeight: 1.2,
+      width: 0,
+    };
+
+    if (style.bg) {
+      setBackground({ ...style.bg });
+    }
+
+    addText({
+      id,
+      type: 'text',
+      ...defaultText,
+      ...style.style,
+    });
+    selectText(id);
+    setTool('select');
+    showToast(`${style.name} applied!`, 'success');
+  }, [addText, state.canvasWidth, state.canvasHeight, selectText, setTool, showToast, setBackground]);
+
+  const defaultMemeText: Omit<TextElement, 'id' | 'type'> = {
+    text: '',
+    x: 0,
+    y: 0,
+    fontSize: 72,
+    fontFamily: 'Impact',
+    fontColor: '#FFFFFF',
+    fontWeight: 700,
+    fontStyle: 'normal',
+    textAlign: 'center',
+    rotation: 0,
+    scaleX: 1,
+    scaleY: 1,
+    fillGradientEnable: false,
+    fillGradientStart: '#6366F1',
+    fillGradientEnd: '#06B6D4',
+    textShadowEnabled: false,
+    textShadowColor: '#000000',
+    textShadowBlur: 0,
+    textShadowOffsetX: 0,
+    textShadowOffsetY: 0,
+    textStrokeEnabled: false,
+    textStrokeColor: '#000000',
+    textStrokeWidth: 0,
+    letterSpacing: 1,
+    lineHeight: 1.1,
+    width: 0,
+  };
+
+  const handleAddMeme = useCallback((meme: typeof MEME_PRESETS[0]) => {
+    if (meme.background) {
+      setBackground({ ...meme.background });
+    }
+    if (meme.topText) {
+      const topId = generateId();
+      addText({
+        id: topId,
+        type: 'text',
+        ...defaultMemeText,
+        text: meme.topText,
+        x: state.canvasWidth / 2 - 300,
+        y: 40,
+        ...meme.topStyle,
+      });
+    }
+    const bottomId = generateId();
+    addText({
+      id: bottomId,
+      type: 'text',
+      ...defaultMemeText,
+      text: meme.bottomText,
+      x: state.canvasWidth / 2 - 300,
+      y: state.canvasHeight - (meme.bottomStyle.fontSize || 72) * (meme.bottomStyle.lineHeight || 1.2) - 40,
+      ...meme.bottomStyle,
+    });
+    selectText(bottomId);
+    setTool('select');
+    showToast(`${meme.name} created!`, 'success');
+  }, [addText, setBackground, selectText, setTool, showToast, state.canvasWidth, state.canvasHeight]);
+
   const leftPanelItems = [
     { id: 'presets' as const, icon: <LayoutGrid size={18} />, label: 'Canvas' },
     { id: 'templates' as const, icon: <Layers size={18} />, label: 'Templates' },
+    { id: 'quick' as const, icon: <Zap size={18} />, label: 'Quick' },
     { id: 'background' as const, icon: <Droplets size={18} />, label: 'BG' },
   ];
+
+  function QuickStylesPanel() {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--gray-500)',
+          }}
+        >
+          Quick Styles
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {QUICK_TEXT_STYLES.map((style) => (
+            <button
+              key={style.id}
+              onClick={() => handleAddQuickStyle(style)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 12,
+                border: '1px solid var(--gray-200)',
+                background: 'transparent',
+                color: 'var(--gray-700)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                width: '100%',
+                textAlign: 'left',
+                fontFamily: 'var(--font-body)',
+                fontSize: 13,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--accent-primary-soft)';
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'var(--gray-200)';
+              }}
+            >
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{style.emoji}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{style.name}</span>
+                <span style={{ fontSize: 10, color: 'var(--gray-400)', fontFamily: 'var(--font-mono)' }}>{style.style.fontFamily} · {style.style.fontSize}px</span>
+              </div>
+            </button>
+          ))}
+        </div>
+
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            color: 'var(--gray-500)',
+            marginTop: 8,
+          }}
+        >
+          Meme Templates
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {MEME_PRESETS.map((meme) => (
+            <button
+              key={meme.id}
+              onClick={() => handleAddMeme(meme)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                borderRadius: 12,
+                border: '1px solid var(--gray-200)',
+                background: 'transparent',
+                color: 'var(--gray-700)',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                width: '100%',
+                textAlign: 'left',
+                fontFamily: 'var(--font-body)',
+                fontSize: 13,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--accent-primary-soft)';
+                e.currentTarget.style.borderColor = 'var(--accent-primary)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.borderColor = 'var(--gray-200)';
+              }}
+            >
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{meme.emoji}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                <span style={{ fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meme.name}</span>
+                <span style={{ fontSize: 10, color: 'var(--gray-400)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {meme.topText && meme.bottomText ? `${meme.topText} / ${meme.bottomText}` : meme.bottomText}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -419,6 +637,7 @@ function EditorContent() {
             <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             {state.leftPanel === 'presets' && <PresetPanel />}
             {state.leftPanel === 'templates' && <TemplatePanel />}
+            {state.leftPanel === 'quick' && <QuickStylesPanel />}
             {state.leftPanel === 'background' && <BackgroundPanel />}
             </div>
           </div>

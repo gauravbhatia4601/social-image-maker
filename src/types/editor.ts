@@ -75,7 +75,7 @@ export interface EditorState {
   activeTool: 'select' | 'text';
   zoom: number;
   showToast: { message: string; type: 'success' | 'error' | 'info' } | null;
-  leftPanel: 'presets' | 'templates' | 'background' | null;
+  leftPanel: 'presets' | 'templates' | 'quick' | 'background' | null;
   rightPanelOpen: boolean;
   history: HistoryEntry[];
   historyIndex: number;
@@ -93,7 +93,7 @@ export type EditorAction =
   | { type: 'SET_ZOOM'; zoom: number }
   | { type: 'SHOW_TOAST'; toast: { message: string; type: 'success' | 'error' | 'info' } }
   | { type: 'HIDE_TOAST' }
-  | { type: 'SET_LEFT_PANEL'; panel: 'presets' | 'templates' | 'background' | null }
+  | { type: 'SET_LEFT_PANEL'; panel: 'presets' | 'templates' | 'quick' | 'background' | null }
   | { type: 'SET_RIGHT_PANEL'; open: boolean }
   | { type: 'UNDO' }
   | { type: 'REDO' }

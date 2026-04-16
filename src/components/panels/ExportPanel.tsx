@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useEditor, useEditorActions } from '@/store/context';
-import { Download, Image, FileImage, X } from 'lucide-react';
+import { Download, Image, FileImage, X, Loader2 } from 'lucide-react';
 import Konva from 'konva';
 
 interface ExportPanelProps {
@@ -16,31 +16,101 @@ export function ExportPanel({ stageRef, onClose }: ExportPanelProps) {
   const [exportFormat, setExportFormat] = React.useState<'png' | 'jpeg'>('png');
   const [quality, setQuality] = React.useState(1);
   const [scale, setScale] = React.useState(2);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  const generatePreview = useCallback(() => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    try {
+      const oldScaleX = stage.scaleX();
+      const oldScaleY = stage.scaleY();
+      const oldX = stage.x();
+      const constY = stage.y();
+
+      stage.scale({ x: 1, y: 1 });
+      stage.position({ x: 0, y: 0 });
+
+      const url = stage.toDataURL({
+        pixelRatio: 1,
+        x: 0,
+        y: 0,
+        width: state.canvasWidth,
+        height: state.canvasHeight,
+      });
+
+      stage.scale({ x: oldScaleX, y: oldScaleY });
+      stage.position({ x: oldX, y: constY });
+      stage.batchDraw();
+
+      setPreviewUrl(url);
+    } catch {
+      setPreviewUrl(null);
+    }
+  }, [stageRef, state.canvasWidth, state.canvasHeight]);
+
+  useEffect(() => {
+    generatePreview();
+  }, [generatePreview]);
 
   const handleExport = useCallback(() => {
     const stage = stageRef.current;
     if (!stage) return;
 
-    try {
-      const dataURL = stage.toDataURL({
-        pixelRatio: scale,
-        mimeType: exportFormat === 'jpeg' ? 'image/jpeg' : 'image/png',
-        quality: exportFormat === 'jpeg' ? quality : 1,
-      });
+    setExporting(true);
 
-      const link = document.createElement('a');
-      link.download = `social-image-${state.canvasWidth}x${state.canvasHeight}.${exportFormat}`;
-      link.href = dataURL;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    setTimeout(() => {
+      try {
+        const oldScaleX = stage.scaleX();
+        const oldScaleY = stage.scaleY();
+        const oldX = stage.x();
+        const oldY = stage.y();
 
-      showToast('Image downloaded successfully!', 'success');
-      onClose();
-    } catch (err) {
-      showToast('Failed to export image. Try a different format.', 'error');
-    }
+        stage.scale({ x: scale, y: scale });
+        stage.position({ x: 0, y: 0 });
+
+        const dataURL = stage.toDataURL({
+          pixelRatio: 1,
+          mimeType: exportFormat === 'jpeg' ? 'image/jpeg' : 'image/png',
+          quality: exportFormat === 'jpeg' ? quality : 1,
+          x: 0,
+          y: 0,
+          width: state.canvasWidth * scale,
+          height: state.canvasHeight * scale,
+        });
+
+        stage.scale({ x: oldScaleX, y: oldScaleY });
+        stage.position({ x: oldX, y: oldY });
+        stage.batchDraw();
+
+        const link = document.createElement('a');
+        link.download = `socialcraft-${state.canvasWidth}x${state.canvasHeight}.${exportFormat}`;
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast('Image downloaded!', 'success');
+        onClose();
+      } catch (err) {
+        showToast('Export failed. Try a different format.', 'error');
+      } finally {
+        setExporting(false);
+      }
+    }, 100);
   }, [stageRef, exportFormat, quality, scale, state.canvasWidth, state.canvasHeight, showToast, onClose]);
+
+  const aspectRatio = state.canvasWidth / state.canvasHeight;
+  const previewMaxW = 280;
+  const previewMaxH = 220;
+  let previewW, previewH;
+  if (aspectRatio > previewMaxW / previewMaxH) {
+    previewW = previewMaxW;
+    previewH = previewMaxW / aspectRatio;
+  } else {
+    previewH = previewMaxH;
+    previewW = previewMaxH * aspectRatio;
+  }
 
   return (
     <div
@@ -67,13 +137,13 @@ export function ExportPanel({ stageRef, onClose }: ExportPanelProps) {
         className="glass-panel-elevated panel-enter"
         style={{
           position: 'relative',
-          width: 520,
+          width: 480,
           maxHeight: '90vh',
           overflow: 'auto',
           padding: 28,
           display: 'flex',
           flexDirection: 'column',
-          gap: 24,
+          gap: 20,
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -91,7 +161,7 @@ export function ExportPanel({ stageRef, onClose }: ExportPanelProps) {
               Export Image
             </h2>
             <p style={{ fontSize: 13, color: 'var(--gray-500)', marginTop: 4 }}>
-              Download your design for {state.canvasWidth}×{state.canvasHeight}
+              {state.canvasWidth} × {state.canvasHeight}px
             </p>
           </div>
           <button
@@ -107,7 +177,8 @@ export function ExportPanel({ stageRef, onClose }: ExportPanelProps) {
           style={{
             display: 'flex',
             justifyContent: 'center',
-            padding: 16,
+            alignItems: 'center',
+            padding: 20,
             background: 'var(--gray-50)',
             borderRadius: 14,
             border: '1px solid var(--gray-100)',
@@ -115,22 +186,42 @@ export function ExportPanel({ stageRef, onClose }: ExportPanelProps) {
         >
           <div
             style={{
-              width: Math.min(200, 200 * (state.canvasWidth / state.canvasHeight)),
-              height: Math.min(200, 200 * (state.canvasHeight / state.canvasWidth)),
-              maxWidth: 260,
-              maxHeight: 200,
-              borderRadius: 8,
+              width: previewW,
+              height: previewH,
+              borderRadius: 6,
               overflow: 'hidden',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.10)',
               border: '1px solid var(--gray-200)',
-              background: 'white',
+              background: '#fff',
+              position: 'relative',
             }}
           >
-            <div ref={() => {}} style={{ width: '100%', height: '100%', background: '#f0f0f0' }} />
+            {previewUrl ? (
+              <img
+                src={previewUrl}
+                alt="Preview"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f0f0f0',
+              }}>
+                <span style={{ fontSize: 12, color: 'var(--gray-400)' }}>Generating preview...</span>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
             <label
               style={{
@@ -243,25 +334,36 @@ export function ExportPanel({ stageRef, onClose }: ExportPanelProps) {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={handleExport}
-            className="btn-primary"
-            style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: '14px 20px',
-              fontSize: 14,
-              fontWeight: 600,
-            }}
-          >
-            <Download size={18} />
-            Download {exportFormat.toUpperCase()}
-          </button>
-        </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="btn-primary"
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            padding: '14px 20px',
+            fontSize: 14,
+            fontWeight: 600,
+            opacity: exporting ? 0.7 : 1,
+          }}
+        >
+          {exporting ? (
+            <>
+              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+              Exporting...
+            </>
+          ) : (
+            <>
+              <Download size={18} />
+              Download {exportFormat.toUpperCase()}
+            </>
+          )}
+        </button>
+
+        <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
       </div>
     </div>
   );

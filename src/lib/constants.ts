@@ -1,4 +1,4 @@
-import { CanvasPreset, TemplatePreset, BackgroundConfig } from '@/types/editor';
+import { CanvasPreset, TemplatePreset, BackgroundConfig, TextElement } from '@/types/editor';
 
 export const CANVAS_PRESETS: CanvasPreset[] = [
   { id: 'ig-post', name: 'Instagram Post', platform: 'Instagram', width: 1080, height: 1080, icon: '📷' },
@@ -230,6 +230,111 @@ export const INSPIRATIONAL_QUOTES = [
   { text: 'It always seems impossible until it\'s done.' },
   { text: 'Everything you can imagine is real.' },
   { text: 'Simplicity is the ultimate sophistication.' },
+];
+
+export interface MemePreset {
+  id: string;
+  name: string;
+  emoji: string;
+  topText: string;
+  bottomText: string;
+  background: BackgroundConfig;
+  topStyle: Partial<TextElement>;
+  bottomStyle: Partial<TextElement>;
+}
+
+export const MEME_PRESETS: MemePreset[] = [
+  {
+    id: 'drake',
+    name: 'Drake Meme',
+    emoji: '😏',
+    topText: 'NOPE',
+    bottomText: 'YEP',
+    background: { type: 'solid', solidColor: '#FFFFFF', gradientStart: '#6366F1', gradientEnd: '#06B6D4', gradientDirection: 'to right', gradientType: 'linear', imageUrl: '', templateId: '' },
+    topStyle: { fontSize: 72, fontFamily: 'Impact', fontColor: '#000000', fontWeight: 700, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: true, textStrokeColor: '#FFFFFF', textStrokeWidth: 3, letterSpacing: 2, lineHeight: 1, width: 0 },
+    bottomStyle: { fontSize: 72, fontFamily: 'Impact', fontColor: '#000000', fontWeight: 700, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: true, textStrokeColor: '#FFFFFF', textStrokeWidth: 3, letterSpacing: 2, lineHeight: 1, width: 0 },
+  },
+  {
+    id: ' motivational-dark',
+    name: 'Dark Motivation',
+    emoji: '🌙',
+    topText: '',
+    bottomText: 'THE GRIND DOESN\'T STOP',
+    background: { type: 'gradient', solidColor: '#FFFFFF', gradientStart: '#161A2B', gradientEnd: '#3A4158', gradientDirection: 'to bottom', gradientType: 'linear', imageUrl: '', templateId: '' },
+    topStyle: { fontSize: 48, fontFamily: 'Bebas Neue', fontColor: '#FFFFFF', fontWeight: 400, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 6, lineHeight: 1, width: 0 },
+    bottomStyle: { fontSize: 48, fontFamily: 'Bebas Neue', fontColor: '#FFFFFF', fontWeight: 400, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: true, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: true, textShadowColor: '#000000', textShadowBlur: 8, textShadowOffsetX: 0, textShadowOffsetY: 4, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 6, lineHeight: 1, width: 0 },
+  },
+  {
+    id: 'neon-quote',
+    name: 'Neon Quote',
+    emoji: '💜',
+    topText: '',
+    bottomText: 'CREATE YOUR OWN MAGIC',
+    background: { type: 'gradient', solidColor: '#FFFFFF', gradientStart: '#6366F1', gradientEnd: '#EC4899', gradientDirection: 'to bottom right', gradientType: 'linear', imageUrl: '', templateId: '' },
+    topStyle: { fontSize: 36, fontFamily: 'Inter', fontColor: '#FFFFFF', fontWeight: 600, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 0, lineHeight: 1.2, width: 0 },
+    bottomStyle: { fontSize: 56, fontFamily: 'Archivo Black', fontColor: '#FFFFFF', fontWeight: 400, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: true, textShadowColor: 'rgba(0,0,0,0.5)', textShadowBlur: 12, textShadowOffsetX: 0, textShadowOffsetY: 4, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 3, lineHeight: 1.2, width: 800 },
+  },
+  {
+    id: 'bold-statement',
+    name: 'Bold Statement',
+    emoji: '🔥',
+    topText: '',
+    bottomText: 'NEW DROP\nCOMING SOON',
+    background: { type: 'solid', solidColor: '#000000', gradientStart: '#6366F1', gradientEnd: '#06B6D4', gradientDirection: 'to right', gradientType: 'linear', imageUrl: '', templateId: '' },
+    topStyle: { fontSize: 36, fontFamily: 'Inter', fontColor: '#FFFFFF', fontWeight: 600, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 0, lineHeight: 1.2, width: 0 },
+    bottomStyle: { fontSize: 80, fontFamily: 'Oswald', fontColor: '#FFFFFF', fontWeight: 700, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: true, fillGradientStart: '#F59E0B', fillGradientEnd: '#EF4444', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 4, lineHeight: 1.1, width: 800 },
+  },
+  {
+    id: 'aesthetic-minimal',
+    name: 'Aesthetic Minimal',
+    emoji: '✨',
+    topText: '',
+    bottomText: 'less is more',
+    background: { type: 'solid', solidColor: '#F8F9FC', gradientStart: '#6366F1', gradientEnd: '#06B6D4', gradientDirection: 'to right', gradientType: 'linear', imageUrl: '', templateId: '' },
+    topStyle: { fontSize: 48, fontFamily: 'Inter', fontColor: '#161A2B', fontWeight: 600, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 0, lineHeight: 1.2, width: 0 },
+    bottomStyle: { fontSize: 64, fontFamily: 'Space Grotesk', fontColor: '#161A2B', fontWeight: 300, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: false, fillGradientStart: '#6366F1', fillGradientEnd: '#06B6D4', textShadowEnabled: false, textShadowColor: '#000000', textShadowBlur: 0, textShadowOffsetX: 0, textShadowOffsetY: 0, textStrokeEnabled: false, textStrokeColor: '#000000', textStrokeWidth: 0, letterSpacing: 8, lineHeight: 1, width: 600 },
+  },
+];
+
+export const QUICK_TEXT_STYLES: { id: string; name: string; emoji: string; style: Partial<TextElement>; bg?: BackgroundConfig }[] = [
+  {
+    id: 'meme-impact',
+    name: 'Meme Classic',
+    emoji: '😂',
+    style: { fontSize: 64, fontFamily: 'Impact', fontColor: '#FFFFFF', fontWeight: 700, fontStyle: 'normal', textAlign: 'center', textStrokeEnabled: true, textStrokeColor: '#000000', textStrokeWidth: 3, letterSpacing: 1, lineHeight: 1.1, width: 0 },
+  },
+  {
+    id: 'neon-glow',
+    name: 'Neon Glow',
+    emoji: '💜',
+    style: { fontSize: 48, fontFamily: 'Space Grotesk', fontColor: '#FFFFFF', fontWeight: 600, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: true, fillGradientStart: '#6366F1', fillGradientEnd: '#EC4899', textShadowEnabled: true, textShadowColor: '#6366F1', textShadowBlur: 20, textShadowOffsetX: 0, textShadowOffsetY: 0, letterSpacing: 2, lineHeight: 1.2, width: 0 },
+    bg: { type: 'gradient', solidColor: '#FFFFFF', gradientStart: '#161A2B', gradientEnd: '#3A4158', gradientDirection: 'to bottom', gradientType: 'linear', imageUrl: '', templateId: '' },
+  },
+  {
+    id: 'bold-black',
+    name: 'Bold Black',
+    emoji: '⬛',
+    style: { fontSize: 72, fontFamily: 'Archivo Black', fontColor: '#000000', fontWeight: 400, fontStyle: 'normal', textAlign: 'center', letterSpacing: 2, lineHeight: 1.1, width: 0 },
+  },
+  {
+    id: 'clean-white',
+    name: 'Clean White',
+    emoji: '⬜',
+    style: { fontSize: 48, fontFamily: 'Inter', fontColor: '#FFFFFF', fontWeight: 600, fontStyle: 'normal', textAlign: 'center', letterSpacing: 0, lineHeight: 1.2, width: 0 },
+    bg: { type: 'solid', solidColor: '#161A2B', gradientStart: '#161A2B', gradientEnd: '#3A4158', gradientDirection: 'to bottom', gradientType: 'linear', imageUrl: '', templateId: '' },
+  },
+  {
+    id: 'gradient-pop',
+    name: 'Gradient Pop',
+    emoji: '🎨',
+    style: { fontSize: 56, fontFamily: 'Poppins', fontColor: '#FFFFFF', fontWeight: 700, fontStyle: 'normal', textAlign: 'center', fillGradientEnable: true, fillGradientStart: '#F59E0B', fillGradientEnd: '#EF4444', letterSpacing: 1, lineHeight: 1.1, width: 0 },
+  },
+  {
+    id: 'elegant-serif',
+    name: 'Elegant Serif',
+    emoji: '📜',
+    style: { fontSize: 40, fontFamily: 'Playfair Display', fontColor: '#161A2B', fontWeight: 400, fontStyle: 'italic', textAlign: 'center', letterSpacing: 0, lineHeight: 1.4, width: 0 },
+  },
 ];
 
 export function generateId(): string {
