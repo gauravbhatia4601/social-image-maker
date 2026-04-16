@@ -22,6 +22,19 @@ export interface TextElement {
   rotation: number;
   scaleX: number;
   scaleY: number;
+  fillGradientEnable: boolean;
+  fillGradientStart: string;
+  fillGradientEnd: string;
+  textShadowEnabled: boolean;
+  textShadowColor: string;
+  textShadowBlur: number;
+  textShadowOffsetX: number;
+  textShadowOffsetY: number;
+  textStrokeEnabled: boolean;
+  textStrokeColor: string;
+  textStrokeWidth: number;
+  letterSpacing: number;
+  lineHeight: number;
 }
 
 export interface BackgroundConfig {
@@ -43,6 +56,14 @@ export interface TemplatePreset {
   category: string;
 }
 
+export interface HistoryEntry {
+  textElements: TextElement[];
+  background: BackgroundConfig;
+  canvasWidth: number;
+  canvasHeight: number;
+  selectedPresetId: string;
+}
+
 export interface EditorState {
   canvasWidth: number;
   canvasHeight: number;
@@ -55,6 +76,9 @@ export interface EditorState {
   showToast: { message: string; type: 'success' | 'error' | 'info' } | null;
   leftPanel: 'presets' | 'templates' | 'background' | null;
   rightPanelOpen: boolean;
+  history: HistoryEntry[];
+  historyIndex: number;
+  isEditing: boolean;
 }
 
 export type EditorAction =
@@ -70,4 +94,7 @@ export type EditorAction =
   | { type: 'HIDE_TOAST' }
   | { type: 'SET_LEFT_PANEL'; panel: 'presets' | 'templates' | 'background' | null }
   | { type: 'SET_RIGHT_PANEL'; open: boolean }
-  | { type: 'RESET_CANVAS' };
+  | { type: 'UNDO' }
+  | { type: 'REDO' }
+  | { type: 'SAVE_HISTORY' }
+  | { type: 'SET_EDITING'; isEditing: boolean };

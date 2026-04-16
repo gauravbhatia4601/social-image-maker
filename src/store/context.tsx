@@ -30,6 +30,25 @@ export function EditorProvider({ children }: { children: React.ReactNode }) {
     };
   }, [state.showToast]);
 
+  useEffect(() => {
+    dispatch({ type: 'SAVE_HISTORY' });
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        dispatch({ type: 'UNDO' });
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey))) {
+        e.preventDefault();
+        dispatch({ type: 'REDO' });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
     <EditorContext.Provider value={{ state, dispatch }}>
       {children}
@@ -85,8 +104,13 @@ export function useEditorActions() {
     [dispatch]
   );
 
-  const setZoom = useCallback(
-    (zoom: number) => dispatch({ type: 'SET_ZOOM', zoom }),
+  const undo = useCallback(
+    () => dispatch({ type: 'UNDO' }),
+    [dispatch]
+  );
+
+  const redo = useCallback(
+    () => dispatch({ type: 'REDO' }),
     [dispatch]
   );
 
@@ -107,8 +131,8 @@ export function useEditorActions() {
     [dispatch]
   );
 
-  const resetCanvas = useCallback(
-    () => dispatch({ type: 'RESET_CANVAS' }),
+  const setEditing = useCallback(
+    (isEditing: boolean) => dispatch({ type: 'SET_EDITING', isEditing }),
     [dispatch]
   );
 
@@ -120,10 +144,11 @@ export function useEditorActions() {
     removeText,
     selectText,
     setTool,
-    setZoom,
+    undo,
+    redo,
     showToast,
     setLeftPanel,
     setRightPanel,
-    resetCanvas,
+    setEditing,
   };
 }

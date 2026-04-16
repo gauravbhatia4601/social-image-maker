@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { Stage, Layer, Rect, Text, Transformer, Image as KonvaImage } from 'react-konva';
+import { Stage, Layer, Rect, Text, Transformer, Image as KonvaImage, Group } from 'react-konva';
 import Konva from 'konva';
 import { useEditor, useEditorActions } from '@/store/context';
 import { TextElement } from '@/types/editor';
@@ -10,16 +10,100 @@ interface CanvasEditorProps {
   stageRef: React.RefObject<Konva.Stage | null>;
 }
 
+function EditTextArea({
+  element,
+  canvasRef,
+  scale,
+  offsetX,
+  offsetY,
+  onFinish,
+}: {
+  element: TextElement;
+  canvasRef: React.RefObject<HTMLDivElement | null>;
+  scale: number;
+  offsetX: number;
+  offsetY: number;
+  onFinish: (newText: string) => void;
+}) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [value, setValue] = useState(element.text);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+      textareaRef.current.select();
+    }
+  }, []);
+
+  const handleBlur = useCallback(() => {
+    onFinish(value);
+  }, [value, onFinish]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        onFinish(value);
+      }
+      if (e.key === 'Escape') {
+        onFinish(element.text);
+      }
+    },
+    [value, element.text, onFinish]
+  );
+
+  const canvasRect = canvasRef.current?.getBoundingClientRect();
+  const x = element.x * scale + offsetX + (canvasRect?.left ?? 0);
+  const y = element.y * scale + offsetY + (canvasRect?.top ?? 0);
+
+  return (
+    <textarea
+      ref={textareaRef}
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      style={{
+        position: 'fixed',
+        left: x,
+        top: y,
+        fontSize: element.fontSize * scale,
+        fontFamily: element.fontFamily,
+        fontWeight: element.fontWeight,
+        fontStyle: element.fontStyle === 'italic' ? 'italic' : 'normal',
+        color: element.fontColor,
+        textAlign: element.textAlign as 'left' | 'center' | 'right',
+        background: 'rgba(255,255,255,0.90)',
+        border: '2px solid var(--accent-primary)',
+        borderRadius: 4,
+        padding: '2px 4px',
+        margin: 0,
+        overflow: 'hidden',
+        outline: 'none',
+        resize: 'none',
+        lineHeight: 1.2,
+        zIndex: 1000,
+        minWidth: 100,
+        minHeight: 30,
+        backdropFilter: 'blur(8px)',
+        boxShadow: '0 4px 16px rgba(99,102,241,0.15)',
+      }}
+    />
+  );
+}
+
 function EditableText({
   element,
   isSelected,
   onSelect,
   onChange,
+  onDoubleClick,
 }: {
   element: TextElement;
   isSelected: boolean;
   onSelect: () => void;
   onChange: (updates: Partial<TextElement>) => void;
+  onDoubleClick: () => void;
 }) {
   const textRef = useRef<Konva.Text>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -31,6 +115,35 @@ function EditableText({
     }
   }, [isSelected]);
 
+  const fillProp = element.fillGradientEnable
+    ? undefined
+    : element.fontColor;
+
+  const linearGradientFill = element.fillGradientEnable
+    ? {
+        fillLinearGradientStartPoint: { x: 0, y: 0 },
+        fillLinearGradientEndPoint: { x: element.fontSize * element.text.length * 0.6, y: 0 },
+        fillLinearGradientColorStops: [0, element.fillGradientStart, 1, element.fillGradientEnd],
+      }
+    : {};
+
+  const shadowProps = element.textShadowEnabled
+    ? {
+        shadowColor: element.textShadowColor,
+        shadowBlur: element.textShadowBlur,
+        shadowOffsetX: element.textShadowOffsetX,
+        shadowOffsetY: element.textShadowOffsetY,
+        shadowOpacity: 0.8,
+      }
+    : {};
+
+  const strokeProps = element.textStrokeEnabled
+    ? {
+        stroke: element.textStrokeColor,
+        strokeWidth: element.textStrokeWidth,
+      }
+    : {};
+
   return (
     <>
       <Text
@@ -41,7 +154,7 @@ function EditableText({
         y={element.y}
         fontSize={element.fontSize}
         fontFamily={element.fontFamily}
-        fill={element.fontColor}
+        fill={fillProp}
         fontStyle={`${element.fontWeight} ${element.fontStyle === 'italic' ? 'italic' : 'normal'}`}
         fontWeight={element.fontWeight}
         align={element.textAlign as 'left' | 'center' | 'right'}
@@ -51,6 +164,8 @@ function EditableText({
         draggable={isSelected}
         onClick={onSelect}
         onTap={onSelect}
+        onDblClick={onDoubleClick}
+        onDblTap={onDoubleClick}
         onDragEnd={(e) => {
           onChange({
             x: e.target.x(),
@@ -72,7 +187,12 @@ function EditableText({
           });
         }}
         wrap="word"
-        width={300}
+        width={element.fontSize * element.text.length * 0.6 || 200}
+        letterSpacing={element.letterSpacing || 0}
+        lineHeight={element.lineHeight || 1.2}
+        {...linearGradientFill}
+        {...shadowProps}
+        {...strokeProps}
       />
       {isSelected && (
         <Transformer
@@ -108,10 +228,11 @@ function getGradientPoints(direction: string, w: number, h: number) {
 
 export function CanvasEditor({ stageRef }: CanvasEditorProps) {
   const { state } = useEditor();
-  const { updateText, selectText } = useEditorActions();
+  const { updateText, selectText, setEditing } = useEditorActions();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 600 });
   const [bgImage, setBgImage] = useState<HTMLImageElement | null>(null);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
 
   useEffect(() => {
     const updateSize = () => {
@@ -160,6 +281,20 @@ export function CanvasEditor({ stageRef }: CanvasEditorProps) {
     [selectText]
   );
 
+  const handleTextEditFinish = useCallback(
+    (id: string, newText: string) => {
+      setEditingTextId(null);
+      setEditing(false);
+      if (newText.trim() === '') {
+        updateText(id, { text: 'Text' });
+      } else {
+        updateText(id, { text: newText });
+      }
+      selectText(id);
+    },
+    [updateText, selectText, setEditing]
+  );
+
   const bgFill = state.background.type === 'solid' ? state.background.solidColor : '#FFFFFF';
   const hasGradient = state.background.type === 'gradient';
   const hasImage = state.background.type === 'image' && bgImage;
@@ -169,6 +304,10 @@ export function CanvasEditor({ stageRef }: CanvasEditorProps) {
     state.canvasWidth,
     state.canvasHeight
   );
+
+  const editingElement = editingTextId
+    ? state.textElements.find((el) => el.id === editingTextId)
+    : null;
 
   return (
     <div
@@ -247,13 +386,32 @@ export function CanvasEditor({ stageRef }: CanvasEditorProps) {
             <EditableText
               key={element.id}
               element={element}
-              isSelected={state.selectedTextId === element.id}
-              onSelect={() => selectText(element.id)}
+              isSelected={state.selectedTextId === element.id && editingTextId !== element.id}
+              onSelect={() => {
+                if (editingTextId !== element.id) {
+                  selectText(element.id);
+                }
+              }}
               onChange={(updates) => updateText(element.id, updates)}
+              onDoubleClick={() => {
+                setEditingTextId(element.id);
+                setEditing(true);
+              }}
             />
           ))}
         </Layer>
       </Stage>
+
+      {editingElement && (
+        <EditTextArea
+          element={editingElement}
+          canvasRef={containerRef}
+          scale={scale}
+          offsetX={offsetX}
+          offsetY={offsetY}
+          onFinish={(newText) => handleTextEditFinish(editingElement.id, newText)}
+        />
+      )}
 
       <div
         style={{

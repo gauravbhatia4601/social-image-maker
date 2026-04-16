@@ -84,14 +84,15 @@ export function PresetPanel() {
             >
               {platformIconMap[preset.id] || preset.icon}
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-              <span>{preset.name}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{preset.name}</span>
               <span
                 style={{
                   fontSize: 10,
                   color: 'var(--gray-400)',
                   fontFamily: 'var(--font-mono)',
                   marginTop: 1,
+                  flexShrink: 0,
                 }}
               >
                 {preset.width} × {preset.height}

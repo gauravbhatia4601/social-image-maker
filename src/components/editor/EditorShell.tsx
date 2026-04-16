@@ -2,33 +2,57 @@
 
 import React, { useState, useCallback, useRef } from 'react';
 import Konva from 'konva';
+import dynamic from 'next/dynamic';
 import { EditorProvider, useEditor, useEditorActions } from '@/store/context';
-import { CanvasEditor } from '@/components/canvas/CanvasEditor';
 import { PresetPanel } from '@/components/panels/PresetPanel';
 import { TemplatePanel } from '@/components/panels/TemplatePanel';
 import { BackgroundPanel } from '@/components/panels/BackgroundPanel';
 import { TextPropertiesPanel } from '@/components/panels/TextPropertiesPanel';
 import { ExportPanel } from '@/components/panels/ExportPanel';
 import { Toast } from '@/components/ui/Toast';
-import { generateId } from '@/lib/constants';
+import { generateId, INSPIRATIONAL_QUOTES } from '@/lib/constants';
 import {
   Sparkles,
   Type,
   MousePointer2,
   Download,
-  RotateCcw,
+  Undo2,
+  Redo2,
+  Quote,
   Layers,
   LayoutGrid,
   Droplets,
   X,
 } from 'lucide-react';
 
+const CanvasEditor = dynamic(
+  () => import('@/components/canvas/CanvasEditor').then((mod) => mod.CanvasEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div
+        style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--canvas-bg)',
+        }}
+      >
+        <div className="loading-orb" />
+      </div>
+    ),
+  }
+);
+
 function EditorContent() {
   const { state } = useEditor();
   const {
     addText,
     setTool,
-    resetCanvas,
+    undo,
+    redo,
     showToast,
     setLeftPanel,
     setRightPanel,
@@ -37,38 +61,86 @@ function EditorContent() {
   const stageRef = useRef<Konva.Stage | null>(null);
   const [showExport, setShowExport] = useState(false);
 
+  const canUndo = state.historyIndex > 0;
+  const canRedo = state.historyIndex < state.history.length - 1;
+
   const handleAddText = useCallback(() => {
     const id = generateId();
     addText({
       id,
       type: 'text',
       text: 'Your text here',
-      x: state.canvasWidth / 2 - 80,
-      y: state.canvasHeight / 2 - 20,
+      x: state.canvasWidth / 2 - 100,
+      y: state.canvasHeight / 2 - 30,
       fontSize: 48,
       fontFamily: 'Inter',
       fontColor: '#000000',
       fontWeight: 600,
       fontStyle: 'normal',
-      textAlign: 'left',
+      textAlign: 'center',
       rotation: 0,
       scaleX: 1,
       scaleY: 1,
+      fillGradientEnable: false,
+      fillGradientStart: '#6366F1',
+      fillGradientEnd: '#06B6D4',
+      textShadowEnabled: false,
+      textShadowColor: '#000000',
+      textShadowBlur: 4,
+      textShadowOffsetX: 2,
+      textShadowOffsetY: 2,
+      textStrokeEnabled: false,
+      textStrokeColor: '#000000',
+      textStrokeWidth: 1,
+      letterSpacing: 0,
+      lineHeight: 1.2,
     });
     selectText(id);
     setTool('select');
-    showToast('Text added! Click on it to edit.', 'info');
+    showToast('Text added! Double-click to edit.', 'info');
   }, [addText, state.canvasWidth, state.canvasHeight, selectText, setTool, showToast]);
 
-  const handleReset = useCallback(() => {
-    resetCanvas();
-    showToast('Canvas reset', 'info');
-  }, [resetCanvas, showToast]);
+  const handleAddQuote = useCallback(() => {
+    const quote = INSPIRATIONAL_QUOTES[Math.floor(Math.random() * INSPIRATIONAL_QUOTES.length)];
+    const id = generateId();
+    addText({
+      id,
+      type: 'text',
+      text: quote.text,
+      x: state.canvasWidth / 2 - 200,
+      y: state.canvasHeight / 2 - 60,
+      fontSize: 36,
+      fontFamily: 'Playfair Display',
+      fontColor: state.background.type === 'solid' && state.background.solidColor === '#FFFFFF' ? '#161A2B' : '#FFFFFF',
+      fontWeight: 500,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      rotation: 0,
+      scaleX: 1,
+      scaleY: 1,
+      fillGradientEnable: false,
+      fillGradientStart: '#6366F1',
+      fillGradientEnd: '#06B6D4',
+      textShadowEnabled: false,
+      textShadowColor: '#000000',
+      textShadowBlur: 4,
+      textShadowOffsetX: 2,
+      textShadowOffsetY: 2,
+      textStrokeEnabled: false,
+      textStrokeColor: '#000000',
+      textStrokeWidth: 1,
+      letterSpacing: 0,
+      lineHeight: 1.4,
+    });
+    selectText(id);
+    setTool('select');
+    showToast('Quote added!', 'success');
+  }, [addText, state.canvasWidth, state.canvasHeight, state.background, selectText, setTool, showToast]);
 
   const leftPanelItems = [
     { id: 'presets' as const, icon: <LayoutGrid size={18} />, label: 'Canvas' },
     { id: 'templates' as const, icon: <Layers size={18} />, label: 'Templates' },
-    { id: 'background' as const, icon: <Droplets size={18} />, label: 'Background' },
+    { id: 'background' as const, icon: <Droplets size={18} />, label: 'BG' },
   ];
 
   return (
@@ -140,16 +212,38 @@ function EditorContent() {
           <Type size={16} />
         </button>
 
+        <button
+          className="tool-btn"
+          onClick={handleAddQuote}
+          title="Add inspirational quote"
+          style={{ width: 34, height: 34 }}
+        >
+          <Quote size={16} />
+        </button>
+
         <div style={{ width: 1, height: 20, background: 'var(--gray-200)', margin: '0 4px' }} />
 
         <button
           className="tool-btn"
-          onClick={handleReset}
-          title="Reset canvas"
-          style={{ width: 34, height: 34 }}
+          onClick={undo}
+          title="Undo (Ctrl+Z)"
+          style={{ width: 34, height: 34, opacity: canUndo ? 1 : 0.35 }}
+          disabled={!canUndo}
         >
-          <RotateCcw size={16} />
+          <Undo2 size={16} />
         </button>
+
+        <button
+          className="tool-btn"
+          onClick={redo}
+          title="Redo (Ctrl+Shift+Z)"
+          style={{ width: 34, height: 34, opacity: canRedo ? 1 : 0.35 }}
+          disabled={!canRedo}
+        >
+          <Redo2 size={16} />
+        </button>
+
+        <div style={{ width: 1, height: 20, background: 'var(--gray-200)', margin: '0 4px' }} />
 
         <button
           className="tool-btn"
@@ -198,7 +292,7 @@ function EditorContent() {
                   fontWeight: 500,
                 }}
               >
-                {item.label.slice(0, 3)}
+                {item.label.length > 3 ? item.label.slice(0, 2) : item.label}
               </span>
             </button>
           ))}
@@ -208,7 +302,7 @@ function EditorContent() {
           <div
             className="glass-panel panel-enter"
             style={{
-              width: 240,
+              width: 264,
               height: 'calc(100vh - 80px)',
               marginTop: 60,
               marginLeft: 4,
@@ -218,7 +312,7 @@ function EditorContent() {
               flexShrink: 0,
             }}
           >
-            <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto' }}>
+            <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             {state.leftPanel === 'presets' && <PresetPanel />}
             {state.leftPanel === 'templates' && <TemplatePanel />}
             {state.leftPanel === 'background' && <BackgroundPanel />}
@@ -236,7 +330,7 @@ function EditorContent() {
           <div
             className="glass-panel panel-enter"
             style={{
-              width: 260,
+              width: 276,
               height: 'calc(100vh - 80px)',
               marginTop: 60,
               marginRight: 4,
@@ -246,7 +340,7 @@ function EditorContent() {
               flexShrink: 0,
             }}
           >
-            <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto' }}>
+            <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span
                 style={{

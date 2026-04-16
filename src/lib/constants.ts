@@ -209,6 +209,29 @@ export function getBackgroundCSS(bg: BackgroundConfig): string {
   }
 }
 
+export const INSPIRATIONAL_QUOTES = [
+  { text: 'The only way to do great work is to love what you do.' },
+  { text: 'Stay hungry, stay foolish.' },
+  { text: 'Be the change you wish to see in the world.' },
+  { text: 'Dream big, start small, act now.' },
+  { text: 'In the middle of difficulty lies opportunity.' },
+  { text: 'Create the things you wish existed.' },
+  { text: 'Less ego, more action.' },
+  { text: 'Progress over perfection.' },
+  { text: 'Your limitation—it\'s only your imagination.' },
+  { text: 'Don\'t watch the clock; do what it does. Keep going.' },
+  { text: 'Great things never come from comfort zones.' },
+  { text: 'Success is not final, failure is not fatal.' },
+  { text: 'Hustle in silence. Let success make the noise.' },
+  { text: 'The future depends on what you do today.' },
+  { text: 'Believe you can and you\'re halfway there.' },
+  { text: 'Make today so awesome that yesterday gets jealous.' },
+  { text: 'Start where you are. Use what you have. Do what you can.' },
+  { text: 'It always seems impossible until it\'s done.' },
+  { text: 'Everything you can imagine is real.' },
+  { text: 'Simplicity is the ultimate sophistication.' },
+];
+
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 11);
 }
