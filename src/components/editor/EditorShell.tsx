@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Konva from 'konva';
 import dynamic from 'next/dynamic';
 import { EditorProvider, useEditor, useEditorActions } from '@/store/context';
@@ -50,6 +50,7 @@ function EditorContent() {
   const { state } = useEditor();
   const {
     addText,
+    removeText,
     setTool,
     undo,
     redo,
@@ -63,6 +64,25 @@ function EditorContent() {
 
   const canUndo = state.historyIndex > 0;
   const canRedo = state.historyIndex < state.history.length - 1;
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (state.isEditing) return;
+      const activeEl = document.activeElement;
+      const isTyping = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl instanceof HTMLSelectElement;
+      if (isTyping) return;
+
+      if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedTextId) {
+        e.preventDefault();
+        const id = state.selectedTextId;
+        removeText(id);
+        selectText(null);
+        showToast('Text deleted', 'info');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.selectedTextId, state.isEditing, removeText, selectText, showToast]);
 
   const handleAddText = useCallback(() => {
     const id = generateId();
@@ -320,51 +340,51 @@ function EditorContent() {
           </div>
         )}
 
-        <div style={{ flex: 1, position: 'relative', zIndex: 10 }}>
+        <div style={{ flex: 1, position: 'relative', zIndex: 10, overflow: 'hidden' }}>
           <div style={{ paddingTop: 56, height: '100%' }}>
             <CanvasEditor stageRef={stageRef} />
           </div>
-        </div>
 
-        {state.rightPanelOpen && state.selectedTextId && (
-          <div
-            className="glass-panel panel-enter"
-            style={{
-              width: 276,
-              height: 'calc(100vh - 80px)',
-              marginTop: 60,
-              marginRight: 4,
-              padding: 16,
-              overflow: 'hidden',
-              zIndex: 40,
-              flexShrink: 0,
-            }}
-          >
-            <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  color: 'var(--gray-500)',
-                }}
-              >
-                Properties
-              </span>
-              <button
-                className="tool-btn"
-                onClick={() => { selectText(null); setRightPanel(false); }}
-                style={{ width: 28, height: 28 }}
-              >
-                <X size={14} />
-              </button>
+          {state.rightPanelOpen && state.selectedTextId && (
+            <div
+              className="glass-panel panel-enter"
+              style={{
+                position: 'absolute',
+                top: 60,
+                right: 4,
+                width: 276,
+                height: 'calc(100vh - 80px)',
+                padding: 16,
+                overflow: 'hidden',
+                zIndex: 40,
+              }}
+            >
+              <div className="scrollbar-thin" style={{ height: '100%', overflowY: 'auto', overflowX: 'hidden' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
+                    color: 'var(--gray-500)',
+                  }}
+                >
+                  Properties
+                </span>
+                <button
+                  className="tool-btn"
+                  onClick={() => { selectText(null); setRightPanel(false); }}
+                  style={{ width: 28, height: 28 }}
+                >
+                  <X size={14} />
+                </button>
+              </div>
+              <TextPropertiesPanel />
+              </div>
             </div>
-            <TextPropertiesPanel />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <Toast />
