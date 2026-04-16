@@ -1,13 +1,36 @@
 'use client';
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { Stage, Layer, Rect, Text, Transformer, Image as KonvaImage, Group } from 'react-konva';
+import { Stage, Layer, Rect, Text, Transformer, Image as KonvaImage } from 'react-konva';
 import Konva from 'konva';
 import { useEditor, useEditorActions } from '@/store/context';
 import { TextElement } from '@/types/editor';
 
 interface CanvasEditorProps {
   stageRef: React.RefObject<Konva.Stage | null>;
+}
+
+function measureTextWidth(text: string, fontSize: number, fontFamily: string, fontWeight: number, letterSpacing: number): number {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return text.length * fontSize * 0.7;
+  ctx.font = `${fontWeight} ${fontSize}px "${fontFamily}"`;
+  let totalWidth = 0;
+  for (let i = 0; i < text.length; i++) {
+    totalWidth += ctx.measureText(text[i]).width + letterSpacing;
+  }
+  return totalWidth;
+}
+
+function getTextWidth(element: TextElement): number {
+  if (element.width && element.width > 0) return element.width;
+  const lines = element.text.split('\n');
+  let maxLineW = 0;
+  for (const line of lines) {
+    const w = measureTextWidth(line, element.fontSize, element.fontFamily, element.fontWeight, element.letterSpacing || 0);
+    if (w > maxLineW) maxLineW = w;
+  }
+  return maxLineW + 20;
 }
 
 function EditTextArea({
@@ -55,6 +78,8 @@ function EditTextArea({
   const canvasRect = canvasRef.current?.getBoundingClientRect();
   const x = element.x * scale + offsetX + (canvasRect?.left ?? 0);
   const y = element.y * scale + offsetY + (canvasRect?.top ?? 0);
+  const textW = getTextWidth(element) * scale;
+  const textH = (element.fontSize * (element.lineHeight || 1.2)) * element.text.split('\n').length * scale;
 
   return (
     <textarea
@@ -81,10 +106,11 @@ function EditTextArea({
         overflow: 'hidden',
         outline: 'none',
         resize: 'none',
-        lineHeight: 1.2,
+        lineHeight: element.lineHeight || 1.2,
+        letterSpacing: (element.letterSpacing || 0) * scale,
         zIndex: 1000,
-        minWidth: 100,
-        minHeight: 30,
+        width: Math.max(textW + 20, 100),
+        minHeight: Math.max(textH + 10, 30),
         backdropFilter: 'blur(8px)',
         boxShadow: '0 4px 16px rgba(99,102,241,0.15)',
       }}
@@ -115,6 +141,8 @@ function EditableText({
     }
   }, [isSelected]);
 
+  const textWidth = getTextWidth(element);
+
   const fillProp = element.fillGradientEnable
     ? undefined
     : element.fontColor;
@@ -122,7 +150,7 @@ function EditableText({
   const linearGradientFill = element.fillGradientEnable
     ? {
         fillLinearGradientStartPoint: { x: 0, y: 0 },
-        fillLinearGradientEndPoint: { x: element.fontSize * element.text.length * 0.6, y: 0 },
+        fillLinearGradientEndPoint: { x: textWidth, y: 0 },
         fillLinearGradientColorStops: [0, element.fillGradientStart, 1, element.fillGradientEnd],
       }
     : {};
@@ -175,19 +203,34 @@ function EditableText({
         onTransformEnd={() => {
           const node = textRef.current;
           if (!node) return;
-          const scaleX = node.scaleX();
-          const scaleY = node.scaleY();
-          node.scaleX(1);
-          node.scaleY(1);
-          onChange({
-            x: node.x(),
-            y: node.y(),
-            fontSize: Math.max(8, element.fontSize * Math.max(scaleX, scaleY)),
-            rotation: node.rotation(),
-          });
+          const newScaleX = node.scaleX();
+          const newScaleY = node.scaleY();
+
+          if (element.width && element.width > 0) {
+            const newWidth = Math.max(20, element.width * newScaleX);
+            node.scaleX(1);
+            node.scaleY(1);
+            onChange({
+              x: node.x(),
+              y: node.y(),
+              width: newWidth,
+              fontSize: Math.max(8, element.fontSize * newScaleY),
+              rotation: node.rotation(),
+            });
+          } else {
+            const avgScale = Math.max(newScaleX, newScaleY);
+            node.scaleX(1);
+            node.scaleY(1);
+            onChange({
+              x: node.x(),
+              y: node.y(),
+              fontSize: Math.max(8, element.fontSize * avgScale),
+              rotation: node.rotation(),
+            });
+          }
         }}
         wrap="word"
-        width={element.fontSize * element.text.length * 0.6 || 200}
+        width={textWidth}
         letterSpacing={element.letterSpacing || 0}
         lineHeight={element.lineHeight || 1.2}
         {...linearGradientFill}
@@ -202,7 +245,11 @@ function EditableText({
             return newBox;
           }}
           rotateEnabled={true}
-          enabledAnchors={['top-left', 'top-right', 'bottom-left', 'bottom-right']}
+          enabledAnchors={[
+            'top-left', 'top-center', 'top-right',
+            'middle-left', 'middle-right',
+            'bottom-left', 'bottom-center', 'bottom-right',
+          ]}
           borderStroke="#6366F1"
           borderStrokeWidth={1.5}
           borderDash={[4, 4]}

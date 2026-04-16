@@ -35,6 +35,7 @@ export interface TextElement {
   textStrokeWidth: number;
   letterSpacing: number;
   lineHeight: number;
+  width: number;
 }
 
 export interface BackgroundConfig {

@@ -11,6 +11,7 @@ import { TextPropertiesPanel } from '@/components/panels/TextPropertiesPanel';
 import { ExportPanel } from '@/components/panels/ExportPanel';
 import { Toast } from '@/components/ui/Toast';
 import { generateId, INSPIRATIONAL_QUOTES } from '@/lib/constants';
+import { TextElement } from '@/types/editor';
 import {
   Sparkles,
   Type,
@@ -19,6 +20,8 @@ import {
   Undo2,
   Redo2,
   Quote,
+  Copy,
+  ClipboardPaste,
   Layers,
   LayoutGrid,
   Droplets,
@@ -60,16 +63,73 @@ function EditorContent() {
     selectText,
   } = useEditorActions();
   const stageRef = useRef<Konva.Stage | null>(null);
+  const clipboardRef = useRef<TextElement | null>(null);
   const [showExport, setShowExport] = useState(false);
 
   const canUndo = state.historyIndex > 0;
   const canRedo = state.historyIndex < state.history.length - 1;
+  const canPaste = clipboardRef.current !== null;
+
+  const handleCopy = useCallback(() => {
+    if (!state.selectedTextId) return;
+    const el = state.textElements.find((e) => e.id === state.selectedTextId);
+    if (el) {
+      clipboardRef.current = { ...el };
+      showToast('Text copied', 'info');
+    }
+  }, [state.selectedTextId, state.textElements, showToast]);
+
+  const handlePaste = useCallback(() => {
+    if (!clipboardRef.current) return;
+    const src = clipboardRef.current;
+    const id = generateId();
+    addText({
+      ...src,
+      id,
+      x: src.x + 20,
+      y: src.y + 20,
+    });
+    selectText(id);
+    showToast('Text pasted', 'success');
+  }, [addText, selectText, showToast]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (state.isEditing) return;
       const activeEl = document.activeElement;
       const isTyping = activeEl instanceof HTMLInputElement || activeEl instanceof HTMLTextAreaElement || activeEl instanceof HTMLSelectElement;
+
+      if ((e.metaKey || e.ctrlKey) && e.key === 'c' && !e.shiftKey) {
+        if (isTyping) return;
+        if (state.selectedTextId) {
+          e.preventDefault();
+          const el = state.textElements.find((elem) => elem.id === state.selectedTextId);
+          if (el) {
+            clipboardRef.current = { ...el };
+            showToast('Text copied', 'info');
+          }
+        }
+        return;
+      }
+
+      if ((e.metaKey || e.ctrlKey) && e.key === 'v' && !e.shiftKey) {
+        if (isTyping) return;
+        if (clipboardRef.current) {
+          e.preventDefault();
+          const src = clipboardRef.current;
+          const id = generateId();
+          addText({
+            ...src,
+            id,
+            x: src.x + 20,
+            y: src.y + 20,
+          });
+          selectText(id);
+          showToast('Text pasted', 'success');
+        }
+        return;
+      }
+
       if (isTyping) return;
 
       if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedTextId) {
@@ -82,7 +142,7 @@ function EditorContent() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [state.selectedTextId, state.isEditing, removeText, selectText, showToast]);
+  }, [state.selectedTextId, state.isEditing, state.textElements, removeText, selectText, showToast, addText]);
 
   const handleAddText = useCallback(() => {
     const id = generateId();
@@ -114,6 +174,7 @@ function EditorContent() {
       textStrokeWidth: 1,
       letterSpacing: 0,
       lineHeight: 1.2,
+      width: 0,
     });
     selectText(id);
     setTool('select');
@@ -151,6 +212,7 @@ function EditorContent() {
       textStrokeWidth: 1,
       letterSpacing: 0,
       lineHeight: 1.4,
+      width: 0,
     });
     selectText(id);
     setTool('select');
@@ -239,6 +301,28 @@ function EditorContent() {
           style={{ width: 34, height: 34 }}
         >
           <Quote size={16} />
+        </button>
+
+        <div style={{ width: 1, height: 20, background: 'var(--gray-200)', margin: '0 4px' }} />
+
+        <button
+          className="tool-btn"
+          onClick={handleCopy}
+          title="Copy (Ctrl+C)"
+          style={{ width: 34, height: 34, opacity: state.selectedTextId ? 1 : 0.35 }}
+          disabled={!state.selectedTextId}
+        >
+          <Copy size={16} />
+        </button>
+
+        <button
+          className="tool-btn"
+          onClick={handlePaste}
+          title="Paste (Ctrl+V)"
+          style={{ width: 34, height: 34, opacity: canPaste ? 1 : 0.35 }}
+          disabled={!canPaste}
+        >
+          <ClipboardPaste size={16} />
         </button>
 
         <div style={{ width: 1, height: 20, background: 'var(--gray-200)', margin: '0 4px' }} />
